@@ -1,0 +1,51 @@
+.program dac_r2r
+
+
+; 5 bits R-2R DAC met autopull. Gebruikt de 5 MSB van elke 8 bits sample
+
+.wrap_target
+;    pull block
+;    out null, 27
+    out pins, 8 
+.wrap
+
+% c-sdk {
+
+static inline void dac_r2r_program_init(PIO pio, uint sm, uint offset, uint base_pin, float frequency) {
+
+    // Config state machine
+    pio_sm_config c = dac_r2r_program_get_default_config(offset);
+
+    // Shift config: 8-bit autopull, shift right
+    //sm_config_set_out_shift(&c, false, false, 32);
+    sm_config_set_out_shift(&c, true, true, 8);
+
+    // Set GPIO -> PIO functie 
+    for(uint8_t i = 0; i < 8; i++) {
+        pio_gpio_init(pio, base_pin + i);
+    }
+
+    // PIO config
+    sm_config_set_out_pins(&c, base_pin, 8);
+
+    // PIO richting
+    pio_sm_set_consecutive_pindirs(pio, sm, base_pin, 8, true);
+
+    // Clock-div matching update rate
+    float clk_div = (float)clock_get_hz(clk_sys) / frequency;
+    sm_config_set_clkdiv(&c, clk_div);
+
+    //
+    pio_sm_clear_fifos(pio, sm);
+    pio_sm_restart(pio, sm);
+
+    // Load and start state machine
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+
+    // Debug
+    printf("DAC R2R PIO started on pins %d-%d, freq=%.0f Hz, clk_div=%.2f\n", base_pin, base_pin+7, frequency, clk_div);
+
+}
+
+%}
