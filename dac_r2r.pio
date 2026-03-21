@@ -4,8 +4,6 @@
 ; 5 bits R-2R DAC met autopull. Gebruikt de 5 MSB van elke 8 bits sample
 
 .wrap_target
-;    pull block
-;    out null, 27
     out pins, 8 
 .wrap
 
@@ -17,7 +15,6 @@ static inline void dac_r2r_program_init(PIO pio, uint sm, uint offset, uint base
     pio_sm_config c = dac_r2r_program_get_default_config(offset);
 
     // Shift config: 8-bit autopull, shift right
-    //sm_config_set_out_shift(&c, false, false, 32);
     sm_config_set_out_shift(&c, true, true, 8);
 
     // Set GPIO -> PIO functie 
