@@ -202,7 +202,7 @@ version : DMK. Intial code
     dma_start_channel_mask(1u << dma_adc_ping_channel);
     adc_run(true);
 
-    // Init fir filter
+    // Init fir or filter
     process_init(); 
 
     printf("Let's go ...\n");

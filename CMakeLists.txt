@@ -1,100 +1,128 @@
-#
-# PICO DSP-PROJECT
-#
-# Skeleton for the dsp project (using cmsis-dsp)
-#
-# 2026/03/16    dkroeske@gmail.com  Initial
-#
-#
+# =============================================================================
+# PICO DSP PROJECT – met CMSIS-DSP via add_subdirectory
+# =============================================================================
+
 cmake_minimum_required(VERSION 3.13)
 
+# Board: pico2 voor RP2350, pico voor RP2040
 set(PICO_BOARD pico2)
 
-message(STATUS "DSP project (using cmsis-dsp): ADC => dsp => R-2R DAC")
-
-#set(CMSISDSP ${CMAKE_CURRENT_LIST_DIR}/CMSIS-DSP)
-#set(CMSISCORE ${CMAKE_CURRENT_LIST_DIR}/CMSIS_6/CMSIS/Core)
-
-# Include tools van de PICO sdk
+# Laad Pico SDK
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
-include($ENV{PICO_SDK_PATH}/tools/CMakeLists.txt)
 
-# Projectnaam
 project(dsp_project C CXX ASM)
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
-
-if (PICO_SDK_VERSION_STRING VERSION_LESS "2.0.0")
-    message(FATAL_ERROR "Raspberry PI Pico SDK version 2.0.0 (or later) required. Your version is $(PICO_SDK_VERSION_STRING)")
-endif()
-
-# If you want debug output from USB (pass -DPICO_STDIO_USB=1) this ensures you don't lose any debug output while USB is set up
-if (NOT DEFINED PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS)
-    set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS 3000)
-endif()
-
-
-# 
 pico_sdk_init()
 
-#
-#add_subdirectory(${CMSISDSP}/Source bin_dsp)
+if(PICO_SDK_VERSION_STRING VERSION_LESS "2.0.0")
+    message(FATAL_ERROR "Pico SDK versie 2.0.0 of hoger vereist")
+endif()
 
-#target_compile_options(CMSISDSP PUBLIC 
-#    -Wsign-compare
-#    -Wdouble-promotion
-#    -Ofast -ffast-math
-#    -DNDEBUG
-#    -Wall -Wextra  -Werror
-#    -fshort-enums 
-#    #-fshort-wchar
-#)
+# -----------------------------------------------------------------------------
+# Pad naar CMSIS-DSP en CMSIS-CORE (git submodule)
+# -----------------------------------------------------------------------------
+set(CMSIS_DSP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmsis-dsp)
 
+if(NOT EXISTS "${CMSIS_DSP_DIR}/Source/CMakeLists.txt")
+    message(FATAL_ERROR 
+        "CMSIS-DSP map niet gevonden of incompleet\n"
+        "Voer uit:\n"
+        "  git submodule add https://github.com/ARM-software/CMSIS-DSP.git cmsis-dsp\n"
+        "  git submodule add https://github.com/ARM-software/CMSIS_5.git cmsis_5\n"
+        "  git submodule update --init --recursive"
+    )
+endif()
 
-#
-add_compile_options(
-    -Wall
-    -Werror
-    -O0
-    -g
-)
+# Bouw CMSIS-DSP als library
+add_subdirectory(${CMSIS_DSP_DIR}/Source cmsisdsp_bin)
 
+# -----------------------------------------------------------------------------
+# Applicatie code
+# -----------------------------------------------------------------------------
 add_executable(${PROJECT_NAME}
     main.c
     process.c
+    # voeg hier eventueel meer bronbestanden toe
 )
 
+# -----------------------------------------------------------------------------
+# Includes – cruciaal om cmsis_compiler.h te vinden
+# -----------------------------------------------------------------------------
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMSIS_DSP_DIR}/Include
+    ${CMSIS_DSP_DIR}/PrivateInclude
+)
+
+target_include_directories(CMSISDSP PRIVATE
+    ${CMSIS_DSP_DIR}/Include
+    ${CMSIS_DSP_DIR}/PrivateInclude
+)
+
+# CMSIS-Core 
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmsis_5/CMSIS/Core/Include
+)
+target_include_directories(CMSISDSP PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmsis_5/CMSIS/Core/Include
+)
+
+# -----------------------------------------------------------------------------
+# Core-definities (kies één!)
+# -----------------------------------------------------------------------------
+# Voor Pico 2 (RP2350 – Cortex-M33)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ARM_MATH_CM33)
+target_compile_definitions(CMSISDSP    PRIVATE ARM_MATH_CM33)
+
+# Voor Pico 1 (RP2040 – Cortex-M0+) → uncomment en verwijder CM33 regels
+#target_compile_definitions(${PROJECT_NAME} PRIVATE ARM_MATH_CM0PLUS)
+#target_compile_definitions(cmsisdsp    PRIVATE ARM_MATH_CM0PLUS)
+
+# -----------------------------------------------------------------------------
+# Link libraries
+# -----------------------------------------------------------------------------
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    CMSISDSP
+    pico_stdlib
+    pico_stdio_usb
+    hardware_adc
+    hardware_dma
+    hardware_gpio
+    hardware_pio
+)
+
+# -----------------------------------------------------------------------------
+# PIO header (voor R-2R DAC)
+# -----------------------------------------------------------------------------
 pico_generate_pio_header(${PROJECT_NAME}
     ${CMAKE_CURRENT_LIST_DIR}/dac_r2r.pio
 )
 
-#
+# -----------------------------------------------------------------------------
+# USB / UART instellingen
+# -----------------------------------------------------------------------------
+pico_enable_stdio_usb(${PROJECT_NAME} 1)
+pico_enable_stdio_uart(${PROJECT_NAME} 0)
+
+# -----------------------------------------------------------------------------
+# Extra outputs (.uf2, .bin, disassembly, etc.)
+# -----------------------------------------------------------------------------
 pico_add_extra_outputs(${PROJECT_NAME})
 
-#
-#target_include_directories(${PROJECT_NAME} PRIVATE
-#  ${CMAKE_CURRENT_LIST_DIR}/CMSIS-DSP/Include
-#  ${CMAKE_CURRENT_LIST_DIR}/CMSIS_6/CMSIS/Core/Include
-#)
-
-#
-#    ${CMAKE_CURRENT_LIST_DIR}/CMSISDSP/build/bin_dsp/libCMSISDSP.a
-target_link_libraries(${PROJECT_NAME} 
-    pico_stdlib
-#    ${CMAKE_CURRENT_LIST_DIR}/build/bin_dsp/libCMSISDSP.a
-    pico_stdio_usb
-    hardware_gpio
-    hardware_pio
-    hardware_dma
-    hardware_sync
-    hardware_clocks
-    hardware_irq
-    hardware_pwm
-    hardware_adc
+# -----------------------------------------------------------------------------
+# Compile opties
+# -----------------------------------------------------------------------------
+target_compile_options(${PROJECT_NAME} PRIVATE
+    -Wall
+    -Wextra
+    -O0                 # debug – later -O2 of -Ofast
+    -g
 )
 
-#
-pico_enable_stdio_usb(${PROJECT_NAME} 1)
-pico_enable_stdio_uart(${PROJECT_NAME} 1)
-
+# Optioneel: maak CMSIS-DSP zelf sneller
+target_compile_options(CMSISDSP PRIVATE
+    -Ofast
+    -ffast-math
+)
