@@ -5,12 +5,14 @@
 // Local helper function declaration
 void sawtooth_wave(uint8_t *wave_table, uint16_t size);
 void sin_wave(uint8_t *wave_table, uint16_t size);
-void dac2float(const float *src, uint8_t *dest, uint16_t size, float scaling);
+void float2dac(const float *src, uint8_t *dest, uint16_t size, float scaling);
 void adc2float(const uint16_t *src, float *dest, uint16_t size, float scaling);
+
+float fbuf[4096];
 
 
 /* ************************************************************************** */
-void dac2float(const float *src, uint8_t *dest, uint16_t size, float scaling)
+void float2dac(const float *src, uint8_t *dest, uint16_t size, float scaling)
 /* 
 short   :
 onputs  :
@@ -21,6 +23,7 @@ version : DMK. Intial code
 {
     for(uint16_t idx = 0; idx < size; idx++) {
         dest[idx] = (uint8_t) (src[idx] * scaling);
+        dest[idx] >>= 3; // 5-bits DAC
     }
 }
 
@@ -61,9 +64,11 @@ notes   :
 version : DMK. Intial code
 ***************************************************************************** */
 {
-    for(uint16_t idx = 0; idx < size; idx++ ) {
-        outp[idx] = (inp[idx]>>3);
-    }
+    adc2float(inp, fbuf, 4096, 255.0f);
+    float2dac(fbuf, outp, 4096, 255.0f);
+//    for(uint16_t idx = 0; idx < size; idx++ ) {
+//        outp[idx] = (inp[idx]>>3);
+//    }
 }
 
 
