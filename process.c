@@ -1,6 +1,8 @@
 #include "stdio.h"
 #include "process.h"
+#include "conv_direct.h"
 #include "math.h"
+
 
 // Local helper function declaration
 void sawtooth_wave(uint8_t *wave_table, uint16_t size);
@@ -8,8 +10,9 @@ void sin_wave(uint8_t *wave_table, uint16_t size);
 void float2dac(const float *src, uint8_t *dest, uint16_t size, float scaling);
 void adc2float(const uint16_t *src, float *dest, uint16_t size, float scaling);
 
-float fbuf[4096];
-
+float conv_f[BLOCK_SIZE]; // Resultaat direct convolutie
+float in_f[BLOCK_SIZE];   // Resultaat direct convolutie
+fir_handle_t conv_direct; // Handle naar sync filter zoals in de les ontworpen.
 
 /* ************************************************************************** */
 void float2dac(const float *src, uint8_t *dest, uint16_t size, float scaling)
@@ -52,10 +55,14 @@ notes   :
 version : DMK. Intial code
 ***************************************************************************** */
 {
+    conv_direct = fir_init( ConvDirect_Kernel,
+                            CONVDIRECT_KERNEL_LENGHT, 
+                            BLOCK_SIZE, 
+                            1.0);
 }
 
 /* ************************************************************************** */
-void process(const uint16_t *inp, uint8_t *outp, uint16_t size) 
+void process(const uint16_t *inp, uint8_t *outp) 
 /* 
 short   :
 inputs  :
@@ -64,8 +71,16 @@ notes   :
 version : DMK. Intial code
 ***************************************************************************** */
 {
-    adc2float(inp, fbuf, 4096, 255.0f);
-    float2dac(fbuf, outp, 4096, 255.0f);
+    // Convert all sampels naar float
+    adc2float(inp, in_f, BLOCK_SIZE, 255.0f);
+    
+    // Do de convolutie (filter)
+    fir_update(conv_direct, in_f, conv_f, BLOCK_SIZE);
+
+    // ... result van float naar 5-bits outp voor DAC
+    float2dac(conv_f, outp, BLOCK_SIZE, 255.0f);
+
+
 //    for(uint16_t idx = 0; idx < size; idx++ ) {
 //        outp[idx] = (inp[idx]>>3);
 //    }

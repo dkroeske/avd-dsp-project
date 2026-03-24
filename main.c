@@ -29,7 +29,7 @@ Avans DSP project on Pico 1 or 2 microcontroller
 #define ADC_PIN         26
 #define ADC_FS          5000.0f     // Sample frequency ADC
 #define DAC_FS          5000.0f     // Update frequenct DAC
-#define BLOCK_SIZE      4096        // Sample buffer size
+//#define BLOCK_SIZE      4096        // Sample buffer size
 
 // Global vars
 int dma_adc_ping_channel;         
@@ -210,12 +210,12 @@ version : DMK. Intial code
     while (true) {
     
         dma_channel_wait_for_finish_blocking(dma_adc_ping_channel);
-        process(ping, dac_ping, BLOCK_SIZE);
-        printf("ping ...\n");
- 
+        process(ping, dac_ping);
+        //printf("ping ... ");
+    
         dma_channel_wait_for_finish_blocking(dma_adc_pong_channel);
-        process(pong, dac_pong, BLOCK_SIZE);
-        printf("\tpong ...\n");
+        process(pong, dac_pong);
+        //printf("\tpong ...\n");
 
     }
 }
