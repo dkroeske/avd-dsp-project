@@ -9,6 +9,7 @@ set(PICO_BOARD pico2)
 
 # Laad Pico SDK
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+include($ENV{PICO_SDK_PATH}/tools/CMakeLists.txt
 
 project(dsp_project C CXX ASM)
 
@@ -116,7 +117,7 @@ pico_generate_pio_header(${PROJECT_NAME}
 # USB / UART instellingen
 # -----------------------------------------------------------------------------
 pico_enable_stdio_usb(${PROJECT_NAME} 1)
-pico_enable_stdio_uart(${PROJECT_NAME} 0)
+pico_enable_stdio_uart(${PROJECT_NAME} 1)
 
 # -----------------------------------------------------------------------------
 # Extra outputs (.uf2, .bin, disassembly, etc.)

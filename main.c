@@ -95,6 +95,8 @@ version : DMK. Intial code
 ***************************************************************************** */
 {
     stdio_init_all();
+    fflush(stdout);
+    sleep_ms(50);
     printf("\n---------------------------------------\n");
     printf("DSP Project Rapsberry Pico 2040 or 2350\n\n");
 
@@ -159,7 +161,6 @@ version : DMK. Intial code
     dma_set_irq0_channel_mask_enabled((1u<<dma_adc_ping_channel) | (1u << dma_adc_pong_channel), true);
     irq_set_exclusive_handler(DMA_IRQ_0, dma_handler);
     irq_set_enabled(DMA_IRQ_0, true);
-
     
     // DAC, init R-2R network
     PIO pio = pio0;
@@ -204,6 +205,17 @@ version : DMK. Intial code
 
     // Init fir or filter
     process_init(); 
+
+    // Optional metric. Doe een dummy process en time hoe lang deze duurt.
+    /*
+    uint64_t start = time_us_64();
+    process(ping, dac_ping);
+    uint64_t dt_algo = time_us_64() - start; 
+    printf("dt %llu us\n", dt_algo);
+
+    uint64_t dt_bs = 1.0f / ADC_FS * BLOCK_SIZE;
+    printf("fs %llu us\n", dt_bs);
+    */
 
     printf("Let's go ...\n");
 
