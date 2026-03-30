@@ -12,7 +12,7 @@ void adc2float(const uint16_t *src, float *dest, uint16_t size, float scaling);
 
 float conv_f[BLOCK_SIZE]; // Resultaat direct convolutie
 float in_f[BLOCK_SIZE];   // Resultaat direct convolutie
-fir_handle_t conv_direct; // Handle naar sync filter zoals in de les ontworpen.
+fir_handle_t bpf800_1200; // Handle naar sync filter zoals in de les ontworpen.
 
 /* ************************************************************************** */
 void float2dac(const float *src, uint8_t *dest, uint16_t size, float scaling)
@@ -55,8 +55,8 @@ notes   :
 version : DMK. Intial code
 ***************************************************************************** */
 {
-    conv_direct = fir_init( ConvDirect_Kernel,
-                            CONVDIRECT_KERNEL_LENGHT, 
+    bpf800_1200 = fir_init( bpf800_1200_kernel,
+                            BPF800_1200_KERNEL_LENGHT,
                             BLOCK_SIZE, 
                             1.0);
 }
@@ -75,7 +75,7 @@ version : DMK. Intial code
     adc2float(inp, in_f, BLOCK_SIZE, 255.0f);
     
     // Do de convolutie (filter)
-    fir_update(conv_direct, in_f, conv_f, BLOCK_SIZE);
+    fir_update(bpf800_1200, in_f, conv_f, BLOCK_SIZE);
 
     // ... result van float naar 5-bits outp voor DAC
     float2dac(conv_f, outp, BLOCK_SIZE, 255.0f);

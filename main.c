@@ -27,8 +27,8 @@ Avans DSP project on Pico 1 or 2 microcontroller
 
 // Constants, macro's, ...
 #define ADC_PIN         26
-#define ADC_FS          5000.0f     // Sample frequency ADC
-#define DAC_FS          5000.0f     // Update frequenct DAC
+#define ADC_FS          10000.0f     // Sample frequency ADC
+#define DAC_FS          10000.0f     // Update frequenct DAC
 //#define BLOCK_SIZE      4096        // Sample buffer size
 
 // Global vars
