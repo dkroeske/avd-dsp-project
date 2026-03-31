@@ -1,7 +1,7 @@
 .program dac_r2r
 
 
-; 5 bits R-2R DAC met autopull. Gebruikt de 5 MSB van elke 8 bits sample
+; 8 bits R-2R DAC met autopull. Gebruikt de 8 MSB van elke 8 bits sample
 
 .wrap_target
     out pins, 8 
