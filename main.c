@@ -207,15 +207,16 @@ version : DMK. Intial code
     process_init(); 
 
     // Optional metric. Doe een dummy process en time hoe lang deze duurt.
-    /*
+    
     uint64_t start = time_us_64();
     process(ping, dac_ping);
     uint64_t dt_algo = time_us_64() - start; 
-    printf("dt %llu us\n", dt_algo);
+    printf("Metrics:\n");
+    printf("\tprocess() : %llu us\n", dt_algo);
 
-    uint64_t dt_bs = 1.0f / ADC_FS * BLOCK_SIZE;
-    printf("fs %llu us\n", dt_bs);
-    */
+    uint64_t dt_bs = 1000000 / ADC_FS * BLOCK_SIZE;
+    printf("\tsample: %llu us\n", dt_bs);
+    
 
     printf("Let's go ...\n");
 
