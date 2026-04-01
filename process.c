@@ -1,6 +1,8 @@
 #include "stdio.h"
 #include "process.h"
+#include "conv_direct.h"
 #include "math.h"
+
 
 // Local helper function declaration
 void sawtooth_wave(uint8_t *wave_table, uint16_t size);
@@ -8,9 +10,9 @@ void sin_wave(uint8_t *wave_table, uint16_t size);
 void float2dac(const float *src, uint8_t *dest, uint16_t size, float scaling);
 void adc2float(const uint16_t *src, float *dest, uint16_t size, float scaling);
 
-float fbuf[1024];
-uint8_t wave_table[1024];
-
+float out_f[BLOCK_SIZE]; // Resultaat direct convolutie
+float in_f[BLOCK_SIZE];   // DAC values in float's
+fir_handle_t isf;     // Inverse Sync Filter handle.
 
 /* ************************************************************************** */
 void float2dac(const float *src, uint8_t *dest, uint16_t size, float scaling)
@@ -53,11 +55,17 @@ notes   :
 version : DMK. Intial code
 ***************************************************************************** */
 {
-    sin_wave(wave_table, 1024); 
+    // Init Inverse Sync or DAC reconstruction filter
+    isf = fir_init( isf_kernel, ISF_KERNEL_LENGHT, BLOCK_SIZE, 1.0);
+    if( isf == NULL ) { 
+        printf("ERROR: fir_init() failed, this is FATAL!!\n");
+    } else {
+        printf("process_init() ok\n");
+    }
 }
 
 /* ************************************************************************** */
-void process(const uint16_t *inp, uint8_t *outp, uint16_t size) 
+void process(const uint16_t *inp, uint8_t *outp) 
 /* 
 short   :
 inputs  :
@@ -66,12 +74,20 @@ notes   :
 version : DMK. Intial code
 ***************************************************************************** */
 {
-    adc2float(inp, fbuf, 1024, 255.0f);
-    float2dac(fbuf, outp, 1024, 255.0f);
+    // Convert all sampels naar float
+    adc2float(inp, in_f, BLOCK_SIZE, 255.0f);
+    
+    // Met reconstructie filter
+    // Do de convolutie (filter), in dit geval de reconstructie.
+    //fir_update(isf, in_f, out_f, BLOCK_SIZE);
 
-//    for(uint16_t idx = 0; idx < size; idx++ ) {
-//        outp[idx] = wave_table[idx]>>1; // Adjust for 7 bits dac
-//    }
+    // Zonder reconstructie filter
+    for(uint16_t idx = 0; idx < BLOCK_SIZE; idx++ ) {
+        out_f[idx] = in_f[idx];
+    }
+    
+    // ... result van float naar 5-bits outp voor DAC
+    float2dac(out_f, outp, BLOCK_SIZE, 255.0f);
 }
 
 

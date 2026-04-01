@@ -9,6 +9,7 @@ set(PICO_BOARD pico2)
 
 # Laad Pico SDK
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+include($ENV{PICO_SDK_PATH}/tools/CMakeLists.txt)
 
 project(dsp_project C CXX ASM)
 
@@ -20,6 +21,14 @@ pico_sdk_init()
 if(PICO_SDK_VERSION_STRING VERSION_LESS "2.0.0")
     message(FATAL_ERROR "Pico SDK versie 2.0.0 of hoger vereist")
 endif()
+
+# -----------------------------------------------------------------------------
+# If you want debug output from USB (pass -DPICO_STDIO_USB=1) this ensures y
+# -----------------------------------------------------------------------------
+if (NOT DEFINED PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS)
+    set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS 3000)
+endif()
+
 
 # -----------------------------------------------------------------------------
 # Pad naar CMSIS-DSP en CMSIS-CORE (git submodule)
@@ -45,6 +54,7 @@ add_subdirectory(${CMSIS_DSP_DIR}/Source cmsisdsp_bin)
 add_executable(${PROJECT_NAME}
     main.c
     process.c
+    conv_direct.c 
     # voeg hier eventueel meer bronbestanden toe
 )
 
@@ -70,7 +80,7 @@ target_include_directories(CMSISDSP PRIVATE
 )
 
 # -----------------------------------------------------------------------------
-# Core-definities (kies één!)
+# Core-definities (kies er één afhankelijk van de gebruikte Pico)
 # -----------------------------------------------------------------------------
 # Voor Pico 2 (RP2350 – Cortex-M33)
 target_compile_definitions(${PROJECT_NAME} PRIVATE ARM_MATH_CM33)
@@ -91,6 +101,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     hardware_dma
     hardware_gpio
     hardware_pio
+    hardware_clocks
+    hardware_sync
+    hardware_irq
 )
 
 # -----------------------------------------------------------------------------
@@ -104,7 +117,7 @@ pico_generate_pio_header(${PROJECT_NAME}
 # USB / UART instellingen
 # -----------------------------------------------------------------------------
 pico_enable_stdio_usb(${PROJECT_NAME} 1)
-pico_enable_stdio_uart(${PROJECT_NAME} 0)
+pico_enable_stdio_uart(${PROJECT_NAME} 1)
 
 # -----------------------------------------------------------------------------
 # Extra outputs (.uf2, .bin, disassembly, etc.)
@@ -116,6 +129,7 @@ pico_add_extra_outputs(${PROJECT_NAME})
 # -----------------------------------------------------------------------------
 target_compile_options(${PROJECT_NAME} PRIVATE
     -Wall
+    -Werror
     -Wextra
     -O0                 # debug – later -O2 of -Ofast
     -g
@@ -123,6 +137,13 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 
 # Optioneel: maak CMSIS-DSP zelf sneller
 target_compile_options(CMSISDSP PRIVATE
+    -Wsign-compare
+    -Wdouble-promotion
     -Ofast
     -ffast-math
+    -DNDEBUG
+    -Wall
+    -Wextra
+    -Werror
+    -fshort-enums
 )
