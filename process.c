@@ -79,12 +79,12 @@ version : DMK. Intial code
     
     // Met reconstructie filter
     // Do de convolutie (filter), in dit geval de reconstructie.
-    //fir_update(isf, in_f, out_f, BLOCK_SIZE);
+    fir_update(isf, in_f, out_f, BLOCK_SIZE);
 
     // Zonder reconstructie filter
-    for(uint16_t idx = 0; idx < BLOCK_SIZE; idx++ ) {
-        out_f[idx] = in_f[idx];
-    }
+    //for(uint16_t idx = 0; idx < BLOCK_SIZE; idx++ ) {
+    //    out_f[idx] = in_f[idx];
+   // }
     
     // ... result van float naar 5-bits outp voor DAC
     float2dac(out_f, outp, BLOCK_SIZE, 255.0f);
